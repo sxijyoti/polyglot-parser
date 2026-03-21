@@ -58,6 +58,8 @@ set(SOURCES
 
   ir/ir.c
   exporter/metacall_export.c
+
+  graph/graph.c
 )
 
 # setting the grammer 
@@ -84,4 +86,5 @@ target_include_directories(polyglot_parser PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/adapters
   ${CMAKE_CURRENT_SOURCE_DIR}/ir
   ${CMAKE_CURRENT_SOURCE_DIR}/exporter
+  ${CMAKE_CURRENT_SOURCE_DIR}/graph
 )

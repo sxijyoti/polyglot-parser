@@ -3,8 +3,8 @@
 
 #include <stddef.h>
 
-#define IR_SYMBOLS 512
-#define IR_DEPS    1024
+#define IR_MAX_SYMBOLS 512
+#define IR_MAX_DEPS    1024
 
 typedef struct {
     char name[64];
@@ -22,10 +22,10 @@ typedef struct{
 } ir_dep;
 
 typedef struct {
-    ir_symbol symbols[IR_SYMBOLS];
+    ir_symbol symbols[IR_MAX_SYMBOLS];
     int       symbol_count;
 
-    ir_dep    deps[IR_DEPS];
+    ir_dep    deps[IR_MAX_DEPS];
     int       dep_count;
 } ir_result;
 
