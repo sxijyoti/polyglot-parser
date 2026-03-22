@@ -52,12 +52,13 @@ set(SOURCES
   src/main.c
   src/parser.c
 
+  adapters/adapters.c
   adapters/python_adapter.c
   adapters/js_adapter.c
   adapters/ruby_adapter.c
 
   ir/ir.c
-  exporter/metacall_export.c
+  exporter/mc_export.c
 
   graph/graph.c
 )

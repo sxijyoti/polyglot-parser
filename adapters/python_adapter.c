@@ -50,7 +50,7 @@ static void collect_params(TSNode params, const char *src, ir_symbol *sym) {
         }
 
         if (arg[0] != '\0')
-            ir_symbol_add_arg(sym, arg);
+            ir_symbol_add_args(sym, arg);
     }
 }
 
