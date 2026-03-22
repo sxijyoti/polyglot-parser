@@ -94,32 +94,44 @@ static int json_esp_append(sbuf *s, const char *str) {
     return sb_putc(s, '"');
 }
 
-static int emit_func_for_lang(sbuf *s, const ir_result *ir, const char *lang) {
-    if (!sb_puts(s, "\"functions\":[")) return 0;
+static int sb_indent(sbuf *s, int level) {
+    for (int i = 0; i < level; ++i) {
+        if (!sb_puts(s, "  ")) return 0;
+    }
+    return 1;
+}
+
+static int sb_newline_indent(sbuf *s, int level) {
+    if (!sb_putc(s, '\n')) return 0;
+    return sb_indent(s, level);
+}
+
+static int emit_func_for_lang(sbuf *s, const ir_result *ir, const char *lang, int indent) {
+    if (!sb_puts(s, "\"functions\": [")) return 0;
 
     int first_fn = 1;
     for (size_t i = 0; i < ir->symbol_count; ++i) {
         const ir_symbol *sym = &ir->symbols[i];
         if (strcmp(sym->lang, lang) != 0) continue;
 
-        if (!first_fn) {
-            if (!sb_putc(s, ',')) return 0;
-        }
+        if (!first_fn && !sb_putc(s, ',')) return 0;
+        if (!sb_newline_indent(s, indent + 1)) return 0;
         first_fn = 0;
 
         if (!sb_putc(s, '{')) return 0;
-        if (!sb_puts(s, "\"name\":")) return 0;
+        if (!sb_puts(s, "\"name\": ")) return 0;
         if (!json_esp_append(s, sym->name)) return 0;
-        if (!sb_puts(s, ",\"args\":[")) return 0;
+        if (!sb_puts(s, ", \"args\": [")) return 0;
 
         for (int a = 0; a < sym->args_count; ++a) {
-            if (a > 0 && !sb_putc(s, ',')) return 0;
+            if (a > 0 && !sb_puts(s, ", ")) return 0;
             if (!json_esp_append(s, sym->args[a])) return 0;
         }
 
         if (!sb_puts(s, "]}")) return 0;
     }
 
+    if (!first_fn && !sb_newline_indent(s, indent)) return 0;
     return sb_putc(s, ']');
 }
 
@@ -130,8 +142,8 @@ static int lang_seen(char **langs, size_t n, const char *lang) {
     return 0;
 }
 
-static int emit_lang_object(sbuf *s, const ir_result *ir) {
-    if (!sb_puts(s, "\"languages\":{")) return 0;
+static int emit_lang_object(sbuf *s, const ir_result *ir, int indent) {
+    if (!sb_puts(s, "\"languages\": {")) return 0;
 
     char **langs = NULL;
     size_t nlangs = 0;
@@ -165,17 +177,20 @@ static int emit_lang_object(sbuf *s, const ir_result *ir) {
 
     for (size_t i = 0; i < nlangs; ++i) {
         if (i > 0 && !sb_putc(s, ',')) goto fail;
+        if (!sb_newline_indent(s, indent + 1)) goto fail;
 
         if (!json_esp_append(s, langs[i])) goto fail;
-        if (!sb_putc(s, ':')) goto fail;
-        if (!sb_putc(s, '{')) goto fail;
-        if (!emit_func_for_lang(s, ir, langs[i])) goto fail;
+        if (!sb_puts(s, ": {")) goto fail;
+        if (!sb_newline_indent(s, indent + 2)) goto fail;
+        if (!emit_func_for_lang(s, ir, langs[i], indent + 2)) goto fail;
+        if (!sb_newline_indent(s, indent + 1)) goto fail;
         if (!sb_putc(s, '}')) goto fail;
     }
 
     for (size_t i = 0; i < nlangs; ++i) free(langs[i]);
     free(langs);
 
+    if (nlangs > 0 && !sb_newline_indent(s, indent)) return 0;
     return sb_putc(s, '}');
 
 fail:
@@ -184,29 +199,34 @@ fail:
     return 0;
 }
 
-static int emit_graph_object(sbuf *s, const grp *g) {
-    if (!sb_puts(s, "\"graph\":{")) return 0;
-    if (!sb_puts(s, "\"edges\":[")) return 0;
+static int emit_graph_object(sbuf *s, const grp *g, int indent) {
+    if (!sb_puts(s, "\"graph\": {")) return 0;
+    if (!sb_newline_indent(s, indent + 1)) return 0;
+    if (!sb_puts(s, "\"edges\": [")) return 0;
 
     if (g) {
         for (size_t i = 0; i < g->edge_count; ++i) {
             if (i > 0 && !sb_putc(s, ',')) return 0;
+            if (!sb_newline_indent(s, indent + 2)) return 0;
 
             if (!sb_putc(s, '{')) return 0;
-            if (!sb_puts(s, "\"from\":")) return 0;
+            if (!sb_puts(s, "\"from\": ")) return 0;
             if (!json_esp_append(s, g->edges[i].from)) return 0;
-            if (!sb_puts(s, ",\"to\":")) return 0;
+            if (!sb_puts(s, ", \"to\": ")) return 0;
             if (!json_esp_append(s, g->edges[i].to)) return 0;
-            if (!sb_puts(s, ",\"type\":")) return 0;
+            if (!sb_puts(s, ", \"type\": ")) return 0;
             if (!json_esp_append(s, g->edges[i].type)) return 0;
-            if (!sb_puts(s, ",\"lang\":")) return 0;
+            if (!sb_puts(s, ", \"lang\": ")) return 0;
             if (!json_esp_append(s, g->edges[i].lang)) return 0;
             if (!sb_putc(s, '}')) return 0;
         }
     }
 
-    if (!sb_puts(s, "]}")) return 0;
-    return sb_putc(s, '}');
+    if (g && g->edge_count > 0 && !sb_newline_indent(s, indent + 1)) return 0;
+    if (!sb_puts(s, "]")) return 0;
+    if (!sb_newline_indent(s, indent)) return 0;
+    if (!sb_putc(s, '}')) return 0;
+    return 1;
 }
 
 char *mc_export_json(const ir_result *ir, const grp *g) {
@@ -215,9 +235,12 @@ char *mc_export_json(const ir_result *ir, const grp *g) {
     sbuf s = {0};
 
     if (!sb_putc(&s, '{')) goto fail;
-    if (!emit_lang_object(&s, ir)) goto fail;
+    if (!sb_newline_indent(&s, 1)) goto fail;
+    if (!emit_lang_object(&s, ir, 1)) goto fail;
     if (!sb_putc(&s, ',')) goto fail;
-    if (!emit_graph_object(&s, g)) goto fail;
+    if (!sb_newline_indent(&s, 1)) goto fail;
+    if (!emit_graph_object(&s, g, 1)) goto fail;
+    if (!sb_newline_indent(&s, 0)) goto fail;
     if (!sb_putc(&s, '}')) goto fail;
 
     return s.buf;
