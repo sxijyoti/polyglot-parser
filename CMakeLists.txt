@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0169 OLD)
 
-project(polyglot_parser C)
+project(polygot_parser C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
+include(CTest)
 
 # core library
 FetchContent_Declare(
@@ -47,9 +48,8 @@ include_directories(
   ${tree_sitter_ruby_SOURCE_DIR}/src
 )
 
-# defining my sources
-set(SOURCES
-  src/main.c
+# defining core sources
+set(CORE_SOURCES
   src/parser.c
 
   adapters/adapters.c
@@ -77,15 +77,33 @@ set(GRAMMAR_SOURCES
   ${tree_sitter_SOURCE_DIR}/lib/src/lib.c
 )
 
-add_executable(polyglot_parser
-  ${SOURCES}
+add_executable(polygot_parser
+  src/main.c
+)
+
+add_library(polygot_parser_core STATIC
+  ${CORE_SOURCES}
   ${GRAMMAR_SOURCES}
 )
 
-target_include_directories(polyglot_parser PRIVATE
+target_link_libraries(polygot_parser PRIVATE polygot_parser_core)
+
+target_include_directories(polygot_parser PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/adapters
   ${CMAKE_CURRENT_SOURCE_DIR}/ir
   ${CMAKE_CURRENT_SOURCE_DIR}/exporter
   ${CMAKE_CURRENT_SOURCE_DIR}/graph
 )
+
+target_include_directories(polygot_parser_core PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/adapters
+  ${CMAKE_CURRENT_SOURCE_DIR}/ir
+  ${CMAKE_CURRENT_SOURCE_DIR}/exporter
+  ${CMAKE_CURRENT_SOURCE_DIR}/graph
+)
+
+if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+  add_subdirectory(tests)
+endif()
