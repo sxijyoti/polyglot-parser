@@ -71,8 +71,7 @@ int rb_adapter(const char *fpath, ir_result *ir) {
 
     static const char func_q[] =
         "(method"
-        "  name: (identifier) @name"
-        "  parameters: (method_parameters) @params)";
+        "  name: (identifier) @name) @def";
 
     TSQuery *qfunc = ts_query_new(tree_sitter_ruby(), func_q, sizeof(func_q) - 1, &err_off, &err_type);
     if (!qfunc) {
@@ -84,17 +83,20 @@ int rb_adapter(const char *fpath, ir_result *ir) {
         TSQueryMatch match;
         while (ts_query_cursor_next_match(cur, &match)) {
             TSNode name_nd   = {0};
+            TSNode def_nd    = {0};
             TSNode params_nd = {0};
-            int got_name  = 0, got_params = 0;
+            int got_name = 0, got_def = 0;
 
             for (uint16_t c = 0; c < match.capture_count; c++) {
                 uint32_t nlen;
                 uint32_t idx = match.captures[c].index;
                 const char *cap = ts_query_capture_name_for_id(qfunc, idx, &nlen);
-                if (strncmp(cap, "name",   nlen) == 0) {
-                    name_nd  = match.captures[c].node; got_name   = 1;
-                } else if (strncmp(cap, "params", nlen) == 0) {
-                    params_nd = match.captures[c].node; got_params = 1;
+                if (strncmp(cap, "name", nlen) == 0) {
+                    name_nd = match.captures[c].node;
+                    got_name = 1;
+                } else if (strncmp(cap, "def", nlen) == 0) {
+                    def_nd = match.captures[c].node;
+                    got_def = 1;
                 }
             }
 
@@ -103,7 +105,10 @@ int rb_adapter(const char *fpath, ir_result *ir) {
                 node_text(name_nd, src, fname, sizeof(fname));
                 int line = (int)ts_node_start_point(name_nd).row + 1;
                 ir_symbol *sym = ir_add_symbol(ir, fname, "rb", fpath, line);
-                if (sym && got_params)
+                if (got_def) {
+                    params_nd = ts_node_child_by_field_name(def_nd, "parameters", 10);
+                }
+                if (sym && !ts_node_is_null(params_nd))
                     collect_params(params_nd, src, sym);
             }
         }

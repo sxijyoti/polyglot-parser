@@ -1,17 +1,3 @@
-/*
- * polyglot-parser  —  CLI entry point
- *
- * Usage
- * ─────
- *   polyglot-parser -f <file>           Parse a single file
- *   polyglot-parser -d <directory>      Parse all files in a directory
- *   polyglot-parser -f <file> -o out.json   Write JSON to a file
- *   polyglot-parser --help
- *
- * The output is the MetaCall JSON format consumed by the VS Code extension
- * (Intellisense) and the Function Mesh.
- */
-
 #include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +8,7 @@
 // cli logic
 static void print_usage(const char *prog) {
     fprintf(stderr,
-        "Welcome to polyglot-parser! :D\n\n"
+        "\nWelcome to polyglot-parser! :D\n\n"
         "Currently supported languages: Python(.py), JavaScript(.js, .mjs, .cjs), Ruby(.rb)\n"
         "Usage:\n"
         "  %s -f <file>           parse one file\n"
