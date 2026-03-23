@@ -7,6 +7,8 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
 include(CTest)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 # core library
 FetchContent_Declare(
@@ -86,6 +88,9 @@ add_library(polygot_parser_core STATIC
   ${GRAMMAR_SOURCES}
 )
 
+add_library(polygot::parser ALIAS polygot_parser_core)
+set_target_properties(polygot_parser_core PROPERTIES EXPORT_NAME parser)
+
 target_link_libraries(polygot_parser PRIVATE polygot_parser_core)
 
 target_include_directories(polygot_parser PRIVATE
@@ -97,11 +102,46 @@ target_include_directories(polygot_parser PRIVATE
 )
 
 target_include_directories(polygot_parser_core PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/adapters
-  ${CMAKE_CURRENT_SOURCE_DIR}/ir
-  ${CMAKE_CURRENT_SOURCE_DIR}/exporter
-  ${CMAKE_CURRENT_SOURCE_DIR}/graph
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# package exporting
+install(TARGETS polygot_parser_core
+  EXPORT polygot_parserTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/parser.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT polygot_parserTargets
+  FILE polygot_parserTargets.cmake
+  NAMESPACE polygot::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/polygot_parser
+)
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/polygot_parserConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/polygot_parserConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/polygot_parser
+)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/polygot_parserConfigVersion.cmake
+  VERSION 1.0.0
+  COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/polygot_parserConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/polygot_parserConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/polygot_parser
 )
 
 if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
