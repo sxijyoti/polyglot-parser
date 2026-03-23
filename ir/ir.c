@@ -5,7 +5,7 @@
 
 /* need to define
 void ir_init(ir_result *ir);
-void ir_add_symbol(ir_result *ir, const char *name, const char *lang, const char *file, int line);
+void ir_add_symbol(ir_result *ir, const char *name, ir_symbol_kind kind, const char *lang, const char *file, int line);
 void ir_add_dependency(ir_result *ir, const char *from_file, const char *module, const char *type, const char *lang);
 */
 
@@ -14,13 +14,15 @@ void ir_init(ir_result *ir) {
     ir->dep_count = 0;
 }
 
-ir_symbol *ir_add_symbol(ir_result *ir, const char *name, const char *lang, const char *file, int line) {
+ir_symbol *ir_add_symbol(ir_result *ir, const char *name, ir_symbol_kind kind, const char *lang, const char *file, int line) {
     if (ir->symbol_count >= IR_MAX_SYMBOLS) {
         fprintf(stderr, "IR symbol table limit reached, skipping function: %s\n", name);
         return NULL;
     }
     ir_symbol *sym = &ir->symbols[ir->symbol_count++];
     strncpy(sym->name, name, sizeof(sym->name)-1);
+    sym->kind = kind;
+    sym->is_exported = 1;
     strncpy(sym->lang, lang, sizeof(sym->lang)-1);
     strncpy(sym->file, file, sizeof(sym->file)-1);
     sym->line = line;

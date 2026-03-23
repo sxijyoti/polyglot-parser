@@ -104,7 +104,7 @@ int rb_adapter(const char *fpath, ir_result *ir) {
                 char fname[64] = {0};
                 node_text(name_nd, src, fname, sizeof(fname));
                 int line = (int)ts_node_start_point(name_nd).row + 1;
-                ir_symbol *sym = ir_add_symbol(ir, fname, "rb", fpath, line);
+                ir_symbol *sym = ir_add_symbol(ir, fname, IR_SYMBOL_FUNCTION, "rb", fpath, line);
                 if (got_def) {
                     params_nd = ts_node_child_by_field_name(def_nd, "parameters", 10);
                 }

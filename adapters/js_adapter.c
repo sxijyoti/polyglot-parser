@@ -120,7 +120,7 @@ int js_adapter(const char *fpath, ir_result *ir) {
                 char fname[64] = {0};
                 node_text(name_nd, src, fname, sizeof(fname));
                 int line = (int)ts_node_start_point(name_nd).row + 1;
-                ir_symbol *sym = ir_add_symbol(ir, fname, "js", fpath, line);
+                ir_symbol *sym = ir_add_symbol(ir, fname, IR_SYMBOL_FUNCTION, "js", fpath, line);
                 if (sym && got_params)
                     collect_params(params_nd, src, sym);
             }

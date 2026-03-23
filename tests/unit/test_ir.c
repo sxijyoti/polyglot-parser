@@ -22,11 +22,13 @@ void test_add_symbol(void) {
     ir_result ir;
     ir_init(&ir);
 
-    ir_symbol *sym = ir_add_symbol(&ir, "sum", "py", "examples/example.py", 1);
+    ir_symbol *sym = ir_add_symbol(&ir, "sum", IR_SYMBOL_FUNCTION, "py", "examples/example.py", 1);
 
     TEST_ASSERT_NOT_NULL(sym);
     TEST_ASSERT_EQUAL_INT(1, ir.symbol_count);
     TEST_ASSERT_EQUAL_STRING("sum", sym->name);
+    TEST_ASSERT_EQUAL_INT(IR_SYMBOL_FUNCTION, sym->kind);
+    TEST_ASSERT_EQUAL_INT(1, sym->is_exported);
     TEST_ASSERT_EQUAL_STRING("py", sym->lang);
     TEST_ASSERT_EQUAL_STRING("examples/example.py", sym->file);
     TEST_ASSERT_EQUAL_INT(1, sym->line);
@@ -39,19 +41,19 @@ void test_symbol_overflow(void) {
     for (int i = 0; i < IR_MAX_SYMBOLS; ++i) {
         char name[32];
         snprintf(name, sizeof(name), "f%d", i);
-        ir_symbol *sym = ir_add_symbol(&ir, name, "py", "a.py", i + 1);
+        ir_symbol *sym = ir_add_symbol(&ir, name, IR_SYMBOL_FUNCTION, "py", "a.py", i + 1);
         TEST_ASSERT_NOT_NULL(sym);
     }
 
     TEST_ASSERT_EQUAL_INT(IR_MAX_SYMBOLS, ir.symbol_count);
-    TEST_ASSERT_NULL(ir_add_symbol(&ir, "overflow", "py", "a.py", 1));
+    TEST_ASSERT_NULL(ir_add_symbol(&ir, "overflow", IR_SYMBOL_FUNCTION, "py", "a.py", 1));
 }
 
 void test_add_args(void) {
     ir_result ir;
     ir_init(&ir);
 
-    ir_symbol *sym = ir_add_symbol(&ir, "sum", "py", "examples/example.py", 1);
+    ir_symbol *sym = ir_add_symbol(&ir, "sum", IR_SYMBOL_FUNCTION, "py", "examples/example.py", 1);
     TEST_ASSERT_NOT_NULL(sym);
 
     ir_symbol_add_args(sym, "a");
@@ -66,7 +68,7 @@ void test_arg_limit(void) {
     ir_result ir;
     ir_init(&ir);
 
-    ir_symbol *sym = ir_add_symbol(&ir, "many", "js", "examples/example.js", 1);
+    ir_symbol *sym = ir_add_symbol(&ir, "many", IR_SYMBOL_FUNCTION, "js", "examples/example.js", 1);
     TEST_ASSERT_NOT_NULL(sym);
 
     for (int i = 0; i < IR_MAX_ARGS + 5; ++i) {
@@ -80,7 +82,7 @@ void test_arg_truncation(void) {
     ir_result ir;
     ir_init(&ir);
 
-    ir_symbol *sym = ir_add_symbol(&ir, "longarg", "js", "a.js", 1);
+    ir_symbol *sym = ir_add_symbol(&ir, "longarg", IR_SYMBOL_FUNCTION, "js", "a.js", 1);
     TEST_ASSERT_NOT_NULL(sym);
 
     char long_arg[IR_ARG_LEN * 2];

@@ -106,21 +106,25 @@ static int sb_newline_indent(sbuf *s, int level) {
     return sb_indent(s, level);
 }
 
-static int emit_func_for_lang(sbuf *s, const ir_result *ir, const char *lang, int indent) {
-    if (!sb_puts(s, "\"functions\": [")) return 0;
+static int emit_symbols_for_kind(sbuf *s, const ir_result *ir, const char *lang, ir_symbol_kind kind, const char *label, int indent) {
+    if (!sb_putc(s, '"')) return 0;
+    if (!sb_puts(s, label)) return 0;
+    if (!sb_puts(s, "\": [")) return 0;
 
-    int first_fn = 1;
+    int first_symbol = 1;
     for (size_t i = 0; i < ir->symbol_count; ++i) {
         const ir_symbol *sym = &ir->symbols[i];
-        if (strcmp(sym->lang, lang) != 0) continue;
+        if (strcmp(sym->lang, lang) != 0 || sym->kind != kind) continue;
 
-        if (!first_fn && !sb_putc(s, ',')) return 0;
+        if (!first_symbol && !sb_putc(s, ',')) return 0;
         if (!sb_newline_indent(s, indent + 1)) return 0;
-        first_fn = 0;
+        first_symbol = 0;
 
         if (!sb_putc(s, '{')) return 0;
         if (!sb_puts(s, "\"name\": ")) return 0;
         if (!json_esp_append(s, sym->name)) return 0;
+        if (!sb_puts(s, ", \"exported\": ")) return 0;
+        if (!sb_puts(s, sym->is_exported ? "true" : "false")) return 0;
         if (!sb_puts(s, ", \"args\": [")) return 0;
 
         for (int a = 0; a < sym->args_count; ++a) {
@@ -131,8 +135,19 @@ static int emit_func_for_lang(sbuf *s, const ir_result *ir, const char *lang, in
         if (!sb_puts(s, "]}")) return 0;
     }
 
-    if (!first_fn && !sb_newline_indent(s, indent)) return 0;
+    if (!first_symbol && !sb_newline_indent(s, indent)) return 0;
     return sb_putc(s, ']');
+}
+
+static int emit_symbol_groups_for_lang(sbuf *s, const ir_result *ir, const char *lang, int indent) {
+    if (!emit_symbols_for_kind(s, ir, lang, IR_SYMBOL_FUNCTION, "functions", indent)) return 0;
+    if (!sb_putc(s, ',')) return 0;
+    if (!sb_newline_indent(s, indent)) return 0;
+    if (!emit_symbols_for_kind(s, ir, lang, IR_SYMBOL_CLASS, "classes", indent)) return 0;
+    if (!sb_putc(s, ',')) return 0;
+    if (!sb_newline_indent(s, indent)) return 0;
+    if (!emit_symbols_for_kind(s, ir, lang, IR_SYMBOL_OBJECT, "objects", indent)) return 0;
+    return 1;
 }
 
 static int lang_seen(char **langs, size_t n, const char *lang) {
@@ -182,7 +197,7 @@ static int emit_lang_object(sbuf *s, const ir_result *ir, int indent) {
         if (!json_esp_append(s, langs[i])) goto fail;
         if (!sb_puts(s, ": {")) goto fail;
         if (!sb_newline_indent(s, indent + 2)) goto fail;
-        if (!emit_func_for_lang(s, ir, langs[i], indent + 2)) goto fail;
+        if (!emit_symbol_groups_for_lang(s, ir, langs[i], indent + 2)) goto fail;
         if (!sb_newline_indent(s, indent + 1)) goto fail;
         if (!sb_putc(s, '}')) goto fail;
     }
