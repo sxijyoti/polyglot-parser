@@ -8,7 +8,7 @@
 // cli logic
 static void print_usage(const char *prog) {
     fprintf(stderr,
-        "\nWelcome to polyglot-parser! :D\n\n"
+        "\nWelcome to polygot-parser! :D\n\n"
         "Currently supported languages: Python(.py), JavaScript(.js, .mjs, .cjs), Ruby(.rb)\n"
         "Usage:\n"
         "  %s -f <file>           parse one file\n"
@@ -55,6 +55,11 @@ int main(int argc, char **argv) {
             i--; 
             
         } else if (strcmp(argv[i], "-d") == 0 && i + 1 < argc) {
+            if (file_count > 0) {
+                fprintf(stderr, "[Error] -f and -d can not be used together\n\n");
+                print_usage(argv[0]);
+                return 1;
+            }
             dir_arg = argv[++i];
         } else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
             out_arg = argv[++i];

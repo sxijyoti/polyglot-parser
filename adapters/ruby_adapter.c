@@ -104,7 +104,7 @@ int rb_adapter(const char *fpath, ir_result *ir) {
                 char fname[64] = {0};
                 node_text(name_nd, src, fname, sizeof(fname));
                 int line = (int)ts_node_start_point(name_nd).row + 1;
-                ir_symbol *sym = ir_add_symbol(ir, fname, "rb", fpath, line);
+                ir_symbol *sym = ir_add_symbol(ir, fname, IR_SYMBOL_FUNCTION, "rb", fpath, line);
                 if (got_def) {
                     params_nd = ts_node_child_by_field_name(def_nd, "parameters", 10);
                 }
@@ -114,6 +114,53 @@ int rb_adapter(const char *fpath, ir_result *ir) {
         }
         ts_query_cursor_delete(cur);
         ts_query_delete(qfunc);
+    }
+
+    static const char class_q[] =
+        "(class"
+        "  name: (constant) @name)";
+
+    TSQuery *qclass = ts_query_new(tree_sitter_ruby(), class_q, sizeof(class_q) - 1, &err_off, &err_type);
+    if (!qclass) {
+        fprintf(stderr, "Ruby class query error at offset %u (type %d)\n", err_off, (int)err_type);
+    } else {
+        TSQueryCursor *cur = ts_query_cursor_new();
+        ts_query_cursor_exec(cur, qclass, root);
+        TSQueryMatch match;
+        while (ts_query_cursor_next_match(cur, &match)) {
+            for (uint16_t c = 0; c < match.capture_count; c++) {
+                char cname[64] = {0};
+                node_text(match.captures[c].node, src, cname, sizeof(cname));
+                int line = (int)ts_node_start_point(match.captures[c].node).row + 1;
+                ir_add_symbol(ir, cname, IR_SYMBOL_CLASS, "rb", fpath, line);
+            }
+        }
+        ts_query_cursor_delete(cur);
+        ts_query_delete(qclass);
+    }
+
+    static const char obj_q[] =
+        "(assignment"
+        "  left: (identifier) @name"
+        "  right: (hash))";
+
+    TSQuery *qobj = ts_query_new(tree_sitter_ruby(), obj_q, sizeof(obj_q) - 1, &err_off, &err_type);
+    if (!qobj) {
+        fprintf(stderr, "Ruby object query error at offset %u (type %d)\n", err_off, (int)err_type);
+    } else {
+        TSQueryCursor *cur = ts_query_cursor_new();
+        ts_query_cursor_exec(cur, qobj, root);
+        TSQueryMatch match;
+        while (ts_query_cursor_next_match(cur, &match)) {
+            for (uint16_t c = 0; c < match.capture_count; c++) {
+                char oname[64] = {0};
+                node_text(match.captures[c].node, src, oname, sizeof(oname));
+                int line = (int)ts_node_start_point(match.captures[c].node).row + 1;
+                ir_add_symbol(ir, oname, IR_SYMBOL_OBJECT, "rb", fpath, line);
+            }
+        }
+        ts_query_cursor_delete(cur);
+        ts_query_delete(qobj);
     }
 
     static const char req_q[] =
@@ -148,7 +195,11 @@ int rb_adapter(const char *fpath, ir_result *ir) {
             if (got_fn && got_mod &&
                 (strcmp(fn_name, "require")          == 0 ||
                  strcmp(fn_name, "require_relative")  == 0)) {
-                ir_add_dependency(ir, fpath, mod_name, "require", "rb");
+                char resolved[256] = {0};
+                const char *target = mod_name;
+                if (resolve_module_path(fpath, mod_name, RUBY, resolved, sizeof(resolved)))
+                    target = resolved;
+                ir_add_dependency(ir, fpath, target, "require", "rb");
             }
         }
         ts_query_cursor_delete(cur);
