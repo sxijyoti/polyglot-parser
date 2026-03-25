@@ -62,13 +62,13 @@ The output is the unified JSON format which can be consumed by the VS Code exten
 └─ examples/        # some example files 
 ```
 
-CMakeLists.txt - Build configuration and dependencies
-src/main.c - Main CLI entry point
-src/parser.c - parsing flow and file traversal
-adapters - tree-sitter extration for languages(py,js,rb)
-ir - normalized IR for symbols and exports
-graph- dependency graph builder with a type associated with its edges and nodes
-exporter - JSON export of IR and graph
+- CMakeLists.txt - Build configuration and dependencies
+- src/main.c - Main CLI entry point
+- src/parser.c - parsing flow and file traversal
+- adapters - tree-sitter extration for languages(py,js,rb)
+- ir - normalized IR for symbols and exports
+- graph- dependency graph builder with a type associated with its edges and nodes
+- exporter - JSON export of IR and graph
 
 
 ## Architecture
