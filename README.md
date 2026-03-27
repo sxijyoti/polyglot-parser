@@ -132,6 +132,5 @@ This is due to the generated parser output:
 
 <img width="777" height="780" alt="image" src="https://github.com/user-attachments/assets/aea8573e-73aa-4d76-b57a-e886e11cc8da" />
 
-
-
+Code link to show integration with vscode ext: https://github.com/sxijyoti/mc-vscode-extension/tree/testing-parser
 
