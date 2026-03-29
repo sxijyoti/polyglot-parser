@@ -134,3 +134,7 @@ This is due to the generated parser output:
 
 Code link to show integration with vscode ext: https://github.com/sxijyoti/mc-vscode-extension/tree/testing-parser
 
+## AI Disclosure
+All architectural decisions, implementation details, and the proof of concept were independently conceived and implemented by me.
+AI usuage was kept to as minimal as possible. AI was used for the **tests only** and to check with the vscode extension due to time constraint. Everything was reviewed and verified by me before being taken into consideration.
+
